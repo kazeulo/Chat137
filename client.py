@@ -43,7 +43,7 @@ def encoded_message(message, divisor):
 # introduce 5% error
 def add_error(encoded_msg):
     encoded_list = list(encoded_msg)
-    if random.random() < 0.05:  # 5% chance to add an error
+    if random.random() < 0.05:  
         error_index = random.randint(0, len(encoded_list) - 1)
         encoded_list[error_index] = '1' if encoded_list[error_index] == '0' else '0'
     return ''.join(encoded_list)
@@ -159,7 +159,7 @@ def start_chat_window(name, server_addr, client_socket):
                         # handle join/leave notifications without CRC or decoding
                         update_chat_area(f"{message}\n")
                     else:
-                        sender, message_content = message.split(": ", 1)
+                        sender, message_content = message.split(":", 1)
                         sender = sender.strip()
                         message_content = message_content.strip()
 
@@ -168,9 +168,9 @@ def start_chat_window(name, server_addr, client_socket):
                         if is_valid == 'Yes':
                             # Decode the valid message
                             decoded_message = decode_message(message_content)
-                            update_chat_area(f"{sender}: {message_content}\nValid: {is_valid}\nDecoded Message: {decoded_message}\n\n")
+                            update_chat_area(f"{sender}: {message_content}\nValid: Yes.\nDecoded Message: {decoded_message}\n\n")
                         else:
-                            update_chat_area(f"{sender}: {message_content}\nValid: {is_valid}\n\n")
+                            update_chat_area(f"{sender}: {message_content}\nValid: No.\n\n")
 
             except Exception as e:
                 print(f"Error receiving message: {e}")

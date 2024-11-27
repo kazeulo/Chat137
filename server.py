@@ -23,7 +23,7 @@ def to_binary(message):
     return binary_message_with_zeros
 
 # perform binary division using xor
-def division(dividend, divisor):
+def perform_division(dividend, divisor):
     dividend = list(map(int, dividend))
     divisor = list(map(int, divisor))
     divisor_len = len(divisor)
@@ -40,14 +40,14 @@ def division(dividend, divisor):
 # generate the encoded message
 def encoded_message(message, divisor):
     binary_message = to_binary(message)
-    remainder = division(binary_message, divisor)
+    remainder = perform_division(binary_message, divisor)
     encoded_msg = binary_message[:len(binary_message) - 4] + remainder
     return encoded_msg
 
 # introduce 5% error
 def add_error(encoded_msg):
     encoded_list = list(encoded_msg)
-    if random.random() < 0.05:  # 5% chance
+    if random.random() < 0.05:  
         error_index = random.randint(0, len(encoded_list) - 1)
         encoded_list[error_index] = '1' if encoded_list[error_index] == '0' else '0'
     return ''.join(encoded_list)
@@ -65,8 +65,7 @@ def check_crc(dividend, divisor):
         dividend.pop(0)
     
     remainder = ''.join(map(str, dividend))
-    
-    if remainder == '0000': 
+    if remainder == '0000':
         return 'Yes'
     else:
         return 'No'
@@ -118,28 +117,23 @@ def handle_client(connection, addr):
         broadcast(f"{client_name} has joined the chat!\n", None)
         update_chat_area(f"{client_name} has joined the chat!\n\n")
 
-        # Notify the new client of other clients already connected
-        for client, name in clients:
-            if client != connection:
-                connection.send(f"{name} is in the chat!\n\n".encode())
-
         while True:
             try:
                 message = connection.recv(1024).decode().strip()
                 if not message:
                     break  
+                
+                # broadcast message to the clients
+                broadcast(f"{client_name}: {message}\n", connection)
 
                 # perform CRC check and decoding on server-side
                 is_valid = check_crc(message, generator_polynomial)
 
                 if is_valid == 'Yes':
                     decoded_message = decode_message(message)
-                    update_chat_area(f"{client_name}: {message}\nValid: {is_valid}\nDecoded Message: {decoded_message}\n\n")
+                    update_chat_area(f"{client_name}: {message}\nValid: Yes.\nDecoded Message: {decoded_message}\n\n")
                 else:
                     update_chat_area(f"{client_name}: {message}\nValid: No\n\n")
-
-                # Broadcast the message as is to clients
-                broadcast(f"{client_name}: {message}\n", connection)
 
             except Exception as e:
                 print(f"Error receiving message from {client_name}: {e}")
