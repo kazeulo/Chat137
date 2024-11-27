@@ -46,35 +46,47 @@ def encoded_message(message, divisor):
 
 # introduce 5% error
 def add_error(encoded_msg):
+
     encoded_list = list(encoded_msg)
-    if random.random() < 0.05:  
+
+    if random.random() < 0.05:
+        # get a random index to flip
         error_index = random.randint(0, len(encoded_list) - 1)
-        encoded_list[error_index] = '1' if encoded_list[error_index] == '0' else '0'
+
+        if encoded_list[error_index] == '0':
+            encoded_list[error_index] = '1'  
+        else:
+            encoded_list[error_index] = '0'  
+
     return ''.join(encoded_list)
 
 # check CRC 
 def check_crc(dividend, divisor):
-    dividend = list(map(int, dividend))
-    divisor = list(map(int, divisor))
-    divisor_len = len(divisor)
-    
-    while len(dividend) >= divisor_len:
-        if dividend[0] == 1:
-            for i in range(divisor_len):
-                dividend[i] ^= divisor[i]
-        dividend.pop(0)
-    
-    remainder = ''.join(map(str, dividend))
+    remainder = perform_division(dividend, divisor)
     if remainder == '0000':
         return 'Yes'
     else:
         return 'No'
 
-# decode binary back to string
+# convert from binary to string
 def decode_message(binary_message):
     n = 8
-    decoded_chars = [chr(int(binary_message[i:i+n], 2)) for i in range(0, len(binary_message), n)]
-    return ''.join(decoded_chars)
+
+    # for storing decoded message
+    decoded_message = "" 
+
+    for i in range(0, len(binary_message), n):
+        byte = binary_message[i:i + n]
+        
+        char_code = int(byte, 2)
+        
+        # xonvert integer to correspoding character
+        decoded_char = chr(char_code)
+        
+        # append to decoded message
+        decoded_message += decoded_char
+
+    return decoded_message 
 
 # create the GUI window
 root = tk.Tk()
