@@ -7,13 +7,10 @@ import random
 # Generator polynomial G(X) = x^4 + x + 1 -> Binary: 10101
 generator_polynomial = '10101'
 
-# Functions for CRC encoding and decoding (same as your current code)
-
 # AS SENDER
-
-# convert string into binary
-# append 4 zeros
+# convert string into binary with appended zeros
 def to_binary(message):
+    # M(x)
     binary_message = ''.join(format(ord(char), '08b') for char in message)
     binary_message_with_zeros = binary_message + '0000'
     return binary_message_with_zeros
@@ -37,6 +34,7 @@ def perform_division(dividend, divisor):
 def encoded_message(message, divisor):
     binary_message = to_binary(message)
     remainder = perform_division(binary_message, divisor)
+    # T(x)
     encoded_msg = binary_message[:len(binary_message) - 4] + remainder 
     return encoded_msg
 
@@ -45,14 +43,14 @@ def add_error(encoded_msg):
 
     encoded_list = list(encoded_msg)
 
-    if random.random() < 0.05:
+    if random.random() <= 0.05:
         # get a random index to flip
-        error_index = random.randint(0, len(encoded_list) - 1)
+        index = random.randint(0, len(encoded_list) - 1)
 
-        if encoded_list[error_index] == '0':
-            encoded_list[error_index] = '1'  
+        if encoded_list[index] == '0':
+            encoded_list[index] = '1'  
         else:
-            encoded_list[error_index] = '0'  
+            encoded_list[index] = '0'  
 
     return ''.join(encoded_list)
 
@@ -77,7 +75,7 @@ def decode_message(binary_message):
         
         char_code = int(byte, 2)
         
-        # xonvert integer to correspoding character
+        # convert integer to correspoding character
         decoded_char = chr(char_code)
         
         # append to decoded message
@@ -123,7 +121,7 @@ def start_chat_window(name, server_addr, client_socket):
     title_label.grid(row=0, column=0, columnspan=2, padx=10, pady=15)
 
     # text area for displaying messages
-    chat_area = scrolledtext.ScrolledText(frame, width=70, height=15, wrap=tk.WORD)
+    chat_area = scrolledtext.ScrolledText(frame, width=55, height=15, wrap=tk.WORD)
     chat_area.grid(row=1, column=0, padx=10, pady=0)
     chat_area.config(state=tk.DISABLED)
 
@@ -147,14 +145,15 @@ def start_chat_window(name, server_addr, client_socket):
     def send_message(event=None):
         message = message_entry.get("1.0", tk.END).strip()
         if message:
-            crc_message = encoded_message(message, generator_polynomial)    # encode message
-            crc_message_error = add_error(crc_message)                      # introduce 5% error
-            client_socket.send(crc_message_error.encode())
-            update_chat_area(f"You: {message}\nSent: {crc_message_error}\n\n")
+            tx = encoded_message(message, generator_polynomial)    # encode message
+            tx_error = add_error(tx)                                     # introduce 5% error
+            client_socket.send(tx_error.encode())
+            update_chat_area(f"You: {message}\nSent: {tx}\n\n")
             message_entry.delete("1.0", tk.END)
 
     root.bind('<Return>', send_message)
 
+    # function for handling messages
     def listen_for_messages():
         while True:
             try:
@@ -163,11 +162,12 @@ def start_chat_window(name, server_addr, client_socket):
                 if message == "Server has left the chat.":
                     update_chat_area(f"{message}\n")
                     client_socket.close()
-                    root.quit()  # Exit the client GUI
+                    root.quit()
                     break
 
                 if message:
-                    if "has joined the chat!" in message or "has left the chat." in message:
+                    # if "has joined the chat!" in message or "has left the chat." in message:
+                    if "has joined the chat!" in message:
                         # handle join/leave notifications without CRC or decoding
                         update_chat_area(f"{message}\n")
                     else:
@@ -180,9 +180,9 @@ def start_chat_window(name, server_addr, client_socket):
                         if is_valid == 'Yes':
                             # Decode the valid message
                             decoded_message = decode_message(message_content)
-                            update_chat_area(f"{sender}: {message_content}\nValid: Yes.\nDecoded Message: {decoded_message}\n\n")
+                            update_chat_area(f"{sender}: {message_content}\nValid: Yes.\nTranslated Message: {decoded_message}\n\n")
                         else:
-                            update_chat_area(f"{sender}: {message_content}\nValid: No.\n\n")
+                            update_chat_area(f"{sender}: {message_content}\nValid: No. Message corrupted.\n\n")
 
             except Exception as e:
                 print(f"Error receiving message: {e}")

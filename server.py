@@ -14,10 +14,12 @@ soc.bind((host_name, port))
 # list to hold client connections
 clients = []
 
+# generator polynomial G(X) = x^4 + x + 1 -> Binary: 10101
 generator_polynomial = '10101'
 
 # convert message to binary with 4 zeros appended
 def to_binary(message):
+    # M(x)
     binary_message = ''.join(format(ord(char), '08b') for char in message)
     binary_message_with_zeros = binary_message + '0000'
     return binary_message_with_zeros
@@ -41,6 +43,7 @@ def perform_division(dividend, divisor):
 def encoded_message(message, divisor):
     binary_message = to_binary(message)
     remainder = perform_division(binary_message, divisor)
+    # T(x)
     encoded_msg = binary_message[:len(binary_message) - 4] + remainder
     return encoded_msg
 
@@ -49,14 +52,14 @@ def add_error(encoded_msg):
 
     encoded_list = list(encoded_msg)
 
-    if random.random() < 0.05:
+    if random.random() <= 0.05:
         # get a random index to flip
-        error_index = random.randint(0, len(encoded_list) - 1)
+        index = random.randint(0, len(encoded_list) - 1)
 
-        if encoded_list[error_index] == '0':
-            encoded_list[error_index] = '1'  
+        if encoded_list[index] == '0':
+            encoded_list[index] = '1'  
         else:
-            encoded_list[error_index] = '0'  
+            encoded_list[index] = '0'  
 
     return ''.join(encoded_list)
 
@@ -80,7 +83,7 @@ def decode_message(binary_message):
         
         char_code = int(byte, 2)
         
-        # xonvert integer to correspoding character
+        # convert integer to correspoding character
         decoded_char = chr(char_code)
         
         # append to decoded message
@@ -100,7 +103,7 @@ title_label = tk.Label(frame, text="Server", font=("Poppins", 14, "bold"), bg="l
 title_label.grid(row=0, column=0, columnspan=2, padx=10, pady=15)
 
 # text area for displaying messages
-chat_area = scrolledtext.ScrolledText(frame, width=70, height=18, wrap=tk.WORD)
+chat_area = scrolledtext.ScrolledText(frame, width=55, height=15, wrap=tk.WORD)
 chat_area.grid(row=1, column=0, padx=10, pady=0)
 chat_area.config(state=tk.DISABLED)
 
@@ -119,13 +122,12 @@ def update_chat_area(message):
         chat_area.config(state=tk.DISABLED)
         chat_area.yview(tk.END)
 
-# function to handle individual client communication
+# function for handling messages from clients
 def handle_client(connection, addr):
     try:
-        client_name = connection.recv(1024).decode()  # Receive the client's name
+        client_name = connection.recv(1024).decode()  
         clients.append((connection, client_name))
 
-        # broadcast the "has joined" message (no need for CRC check or decoding)
         broadcast(f"{client_name} has joined the chat!\n", None)
         update_chat_area(f"{client_name} has joined the chat!\n\n")
 
@@ -143,9 +145,9 @@ def handle_client(connection, addr):
 
                 if is_valid == 'Yes':
                     decoded_message = decode_message(message)
-                    update_chat_area(f"{client_name}: {message}\nValid: Yes.\nDecoded Message: {decoded_message}\n\n")
+                    update_chat_area(f"{client_name}: {message}\nValid: Yes.\nTranslated Message: {decoded_message}\n\n")
                 else:
-                    update_chat_area(f"{client_name}: {message}\nValid: No\n\n")
+                    update_chat_area(f"{client_name}: {message}\nValid: No. Message corrupted.\n\n")
 
             except Exception as e:
                 print(f"Error receiving message from {client_name}: {e}")
@@ -184,10 +186,10 @@ def accept_clients():
 def send_message(event=None):
     server_message = message_entry.get("1.0", tk.END).strip() 
     if server_message:
-        crc_message = encoded_message(server_message, generator_polynomial)
-        crc_message_error = add_error(crc_message)
-        broadcast(f"Server: {crc_message_error}\n\n", None)
-        update_chat_area(f"Server: {server_message}\nSent: {crc_message_error}\n\n")
+        tx = encoded_message(server_message, generator_polynomial)
+        tx_error = add_error(tx)
+        broadcast(f"Server: {tx_error}\n\n", None)
+        update_chat_area(f"Server: {server_message}\nSent: {tx_error}\n\n")
         message_entry.delete("1.0", tk.END) 
 
 # function to send a shutdown message to all clients and close the server
